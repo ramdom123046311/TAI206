@@ -1,5 +1,5 @@
 # importaciones
-from fastapi import FastAPI
+from fastapi import FastAPI,status,HTTPException
 import asyncio
 from typing import Optional
 
@@ -31,12 +31,12 @@ async def calificaciones():
     await asyncio.sleep(6)
     return {"mensaje": "Tu calificacion en TAI es 10"}
 
-@app.get("/v1/usuarios/{id}", tags=['Parametro obligatorio'])
-async def cunsultaUsuarios(id: int):
+@app.get("/v1/ParametroO/{id}", tags=['Parametro obligatorio'])
+async def cunsultaUsuariosO(id: int):
     await asyncio.sleep(3)
     return {"Bienvenidos a tu api REST": id}
 
-@app.get("/v1/usuarios_op/", tags=['Parametro opcionales'])
+@app.get("/v1/ParametroOp/", tags=['Parametro opcionales'])
 async def cunsultaOp(id: Optional[int] = None):
     await asyncio.sleep(3)
     
@@ -50,3 +50,27 @@ async def cunsultaOp(id: Optional[int] = None):
     
     else:
         return {"Aviso": "no se proporciono id"}
+    
+@app.get("/v1/usuarios/", tags=['CRUD usuarios'])
+async def cunsultaUsuarios():
+    return{
+        "status":"200",
+        "total": len(usuarios),
+        "data":usuarios
+    }
+    
+@app.post("/v1/usuarios/", tags=['CRUD usuarios'])
+async def agregar_usuarios(usuario:dict):
+    for usr in usuarios:
+        if usr["id"] == usuario.get("id"):
+           raise HTTPException(
+               status_code=400,
+               detail="el id ya existe"
+           )
+    usuarios.append(usuario)
+    return{
+        "mensaje":"Usuario agregado",
+        "datos":usuario,
+        "status":"200"
+    }
+#tarea hacer put y delete
