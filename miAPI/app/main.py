@@ -52,7 +52,7 @@ async def cunsultaOp(id: Optional[int] = None):
         return {"Aviso": "no se proporciono id"}
     
 @app.get("/v1/usuarios/", tags=['CRUD usuarios'])
-async def cunsultaUsuarios():
+async def consultaUsuarios():
     return{
         "status":"200",
         "total": len(usuarios),
@@ -74,3 +74,46 @@ async def agregar_usuarios(usuario:dict):
         "status":"200"
     }
 #tarea hacer put y delete
+
+#endpoint para put
+@app.put("/v1/usuarios/{id}", tags=['CRUD usuarios'])
+async def actualizar_usuario(id: int, usuario_actualizado: dict):
+    
+    for index, usuario in enumerate(usuarios):
+        if usuario["id"] == id:
+            
+            usuarios[index] = {
+                "id": id,
+                "nombre": usuario_actualizado.get("nombre", usuario["nombre"]),
+                "edad": usuario_actualizado.get("edad", usuario["edad"])
+            }
+            
+            return {
+                "mensaje": "Usuario actualizado correctamente",
+                "datos": usuarios[index],
+                "status": "200"
+            }
+    
+    raise HTTPException(
+        status_code=404,
+        detail="Usuario no encontrado"
+    )
+    
+#enpoint para delete
+@app.delete("/v1/usuarios/{id}", tags=['CRUD usuarios'])
+async def eliminar_usuario(id: int):
+    
+    for index, usuario in enumerate(usuarios):
+        if usuario["id"] == id:
+            usuario_eliminado = usuarios.pop(index)
+            
+            return {
+                "mensaje": "Usuario eliminado correctamente",
+                "usuario_eliminado": usuario_eliminado,
+                "status": "200"
+            }
+    
+    raise HTTPException(
+        status_code=404,
+        detail="Usuario no encontrado"
+    )
