@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Usuario</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        label { display: inline-block; width: 100px; }
+        input { margin-bottom: 10px; padding: 5px; }
+        .btn { padding: 5px 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Agregar Nuevo Usuario</h1>
+    <form method="POST">
+        <label for="id">ID:</label>
+        <input type="number" id="id" name="id" required><br>
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" name="nombre" required><br>
+        <label for="edad">Edad:</label>
+        <input type="number" id="edad" name="edad" required><br>
+        <button type="submit" class="btn">Guardar</button>
+        <a href="{{ url_for('index') }}">Cancelar</a>
+    </form>
+</body>
+</html>
