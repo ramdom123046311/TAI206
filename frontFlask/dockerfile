@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Variable de entorno que usaremos para conectar con FastAPI
+# Variable de entorno que uso para conectar con FastAPI
 ENV FASTAPI_URL=http://fastapi:5000
 
 CMD ["python", "app.py"]

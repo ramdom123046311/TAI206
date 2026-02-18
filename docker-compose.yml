@@ -5,9 +5,9 @@ services:
     build: ./miAPI
     container_name: fastapi_backend
     ports:
-      - "5000:5000"               # Para acceder directamente desde tu navegador (opcional)
+      - "5000:5000"              
     volumes:
-      - ./miAPI/app:/app/app      # Monta el código para recarga automática (solo desarrollo)
+      - ./miAPI/app:/app/app      
     networks:
       - app_network
 
@@ -15,7 +15,7 @@ services:
     build: ./frontFlask
     container_name: flask_frontend
     ports:
-      - "5001:5000"               # Mapea el puerto 5000 del contenedor al 5001 del host (para no chocar con FastAPI)
+      - "5001:5000"              
     environment:
       - FASTAPI_URL=http://fastapi:5000   # Nombre del servicio FastAPI dentro de Docker
     depends_on:
