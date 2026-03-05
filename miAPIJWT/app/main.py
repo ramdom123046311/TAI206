@@ -8,7 +8,7 @@ from jose import JWTError, jwt
 import asyncio
 
 # --- CONFIGURACIONES DE SEGURIDAD (Reporte a) ---
-SECRET_KEY = "mi_llave_secreta_super_segura_2026" # Cambiar en producción
+SECRET_KEY = "mi_llave_secreta_super_segura_2026" 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -122,4 +122,4 @@ async def eliminar_usuario(
                 "mensaje": f"Usuario eliminado por {user_auth}",
                 "datos": usuario_eliminado
             }
-    raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    raise HTTPException(status_code=404, detail="Usuario no encontrado") 
