@@ -1,23 +1,23 @@
-version: '3.8'
-
 services:
+
   fastapi:
     build: ./miAPI
     container_name: fastapi_backend
     ports:
-      - "5000:5000"              
+      - "5000:5000"
     volumes:
-      - ./miAPI/app:/app/app      
+      - ./miAPI/app:/app/app
     networks:
       - app_network
 
+  
   flask:
     build: ./frontFlask
     container_name: flask_frontend
     ports:
-      - "5001:5000"              
+      - "5001:5000"
     environment:
-      - FASTAPI_URL=http://fastapi:5000   # Nombre del servicio FastAPI dentro de Docker
+      - FASTAPI_URL=http://fastapi:5000
     depends_on:
       - fastapi
     networks:
