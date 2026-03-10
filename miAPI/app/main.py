@@ -22,24 +22,27 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
-usuarios = [
-    {"id": 1, "nombre": "Manuel Tovar", "edad": 38},
-    {"id": 2, "nombre": "Andres Martinez", "edad": 20},
-    {"id": 3, "nombre": "Diego Rubio", "edad": 21},
+Citas = [
+    {"id": 1, "nombre": "Manuel Tovar", "dia": 10,"mes": 3,"anio": 2026,"motivo":"dolor abdominal","confirmacion":1},
+    {"id": 2, "nombre": "Andres Martinez","dia": 14,"mes": 4,"anio": 2026,"motivo":"dolor de cabeza","confirmacion":1},
+    {"id": 3, "nombre": "Diego Rubio", "dia": 17,"mes": 6,"anio": 2026,"motivo":"dolor de estomago","confirmacion":1},
 ]
 
 # Modelo de validacion pydantic
-class UsuarioBase(BaseModel):
-    id:int = Field(...,gt=0, description="identificador unico del usuario", example="1")
-    nombre:str = Field(...,min_length=3, max_length=50, description="Nomre de usuario")
-    edad:int = Field(...,gt=0, description="Edad del usuario", example="30", le=121)
-    
+class CitaBase(BaseModel):
+    id:int = Field(...,gt=0, description="identificador unico de la cita", example="1")
+    nombre:str = Field(...,min_length=3, max_length=50, description="Nombre del paciente")
+    dia:int = Field(...,gt=9, description="dia de la cita", example="30", le=31)
+    mes:int = Field(...,gt=1, description="mes de la cita", example="7", le=12)
+    anio :int = Field(...,gt=2025, description="anio de la cita", example="2026", le=2026)
+    motivo:str = Field(...,min_length=3, max_length=100, description="motivo de la cita")
+    confirmacion:bool = Field(...,gt=0, description="identificador de confirmacion", example="0")
 # -----Seguridad HTTP Basic------
 security = HTTPBasic()    
 
 def verificar_peticion(credentials: HTTPBasicCredentials = Depends(security)):
-    usuarioAuth= secrets.compare_digest(credentials.username,"admin")    
-    ContraAuth= secrets.compare_digest(credentials.password,"123456789") 
+    usuarioAuth= secrets.compare_digest(credentials.username,"root")    
+    ContraAuth= secrets.compare_digest(credentials.password,"1234") 
     
     if not (usuarioAuth and ContraAuth):
         raise HTTPException(
@@ -74,82 +77,86 @@ async def cunsultaOp(id: Optional[int] = None):
     await asyncio.sleep(3)
     
     if id is not None:
-        for usuario in usuarios:
-            if usuario["id"] == id:
-                return {"usuario encontrado con el id": id, "usuario": usuario}
+        for cita in Citas:
+            if cita["id"] == id:
+                return {"cita encontrada con el id": id, "cita": cita}
         
         
-        return {"Mensaje": "usuario no encontrado"} 
+        return {"Mensaje": "cita no encontrada"} 
     
     else:
         return {"Aviso": "no se proporciono id"}
     
-@app.get("/v1/usuarios/", tags=['CRUD usuarios'])
-async def consultaUsuarios():
+@app.get("/v1/citas/", tags=['CRUD citas'])
+async def consultaCitas():
     return{
         "status":"200",
-        "total": len(usuarios),
-        "data":usuarios
+        "total": len(Citas),
+        "data":Citas
     }
     
-@app.post("/v1/usuarios/", tags=['CRUD usuarios'])
-async def agregar_usuarios(usuario:UsuarioBase):
-    for usr in usuarios:
-        if usr["id"] == usuario.id:
+@app.post("/v1/citas/", tags=['CRUD citas'])
+async def agregar_citas(cita:CitaBase):
+    for cita in Citas:
+        if cita ["id"] == id:
            raise HTTPException(
                status_code=400,
                detail="el id ya existe"
            )
-    usuarios.append(usuario)
+    Citas.append(cita)
     return{
-        "mensaje":"Usuario agregado",
-        "datos":usuario,
+        "mensaje":"Cita agregada",
+        "datos":cita,
         "status":"200"
     }
 #tarea hacer put y delete
 
 #endpoint para put
-@app.put("/v1/usuarios/{id}", tags=['CRUD usuarios'])
-async def actualizar_usuario(id: int, usuario_actualizado: dict):
+@app.put("/v1/citas/{id}", tags=['CRUD citas'])
+async def actualizar_cita(id: int, cita_actualizada: dict):
     
-    for index, usuario in enumerate(usuarios):
-        if usuario["id"] == id:
+    for index, cita in enumerate(Citas):
+        if cita["id"] == id:
             
-            usuarios[index] = {
+            Citas[index] = {
                 "id": id,
-                "nombre": usuario_actualizado.get("nombre", usuario["nombre"]),
-                "edad": usuario_actualizado.get("edad", usuario["edad"])
+                "nombre": cita_actualizada.get("nombre", cita["nombre"]),
+                "dia": cita_actualizada.get("dia", cita["dia"]),
+                "mes": cita_actualizada.get("mes", cita["mes"]),
+                "anio": cita_actualizada.get("anio", cita["anio"]),
+                "motivo": cita_actualizada.get("motivo", cita["motivo"]),
+                "confirmacion": cita_actualizada.get("confirmacion", cita["confirmacion"]),
             }
             
             return {
-                "mensaje": "Usuario actualizado correctamente",
-                "datos": usuarios[index],
+                "mensaje": "Cita actualizada correctamente",
+                "datos": Citas[index],
                 "status": "200"
             }
     
     raise HTTPException(
         status_code=404,
-        detail="Usuario no encontrado"
+        detail="Cita no encontrada"
     )
     
 #enpoint para delete
-@app.delete("/v1/usuarios/{id}", tags=['CRUD usuarios'])
-async def eliminar_usuario(id: int, usuarioAuth: str = Depends(verificar_peticion)):
+@app.delete("/v1/citas/{id}", tags=['CRUD Citas'])
+async def eliminar_cita(id: int, usuarioAuth: str = Depends(verificar_peticion)):
     
-    for index, usuario in enumerate(usuarios):
-        if usuario["id"] == id:
-            usuario_eliminado = usuarios.pop(index)
+    for index, cita in enumerate(Citas):
+        if cita["id"] == id:
+            cita_eliminada = Citas.pop(index)
             
         
             return {"message": f"Usuario eliminadoo por {usuarioAuth}"}
         
             return {
-                "mensaje": "Usuario eliminado correctamente",
-                "usuario_eliminado": usuario_eliminado,
+                "mensaje": "Cita eliminada correctamente",
+                "usuario_eliminado": cita_eliminada,
                 "status": "200"
             }
     
     raise HTTPException(
         status_code=404,
-        detail="Usuario no encontrado"
+        detail="Cita no encontrada"
     )
