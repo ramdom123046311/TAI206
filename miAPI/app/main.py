@@ -1,17 +1,17 @@
-# importaciones
-from fastapi import FastAPI,status,HTTPException,Depends
+from fastapi import FastAPI, status, HTTPException, Depends
 import asyncio
 from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel,Field
+from pydantic import BaseModel, Field, validator
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import secrets
+from datetime import date
 
 # Inicializacion del servidor
 app = FastAPI(
-    title='mi primer API',
-    description='Manuel David Tovar Rodriguez', 
-    version='1.0'
+    title='API de Citas Médicas',
+    description='Manuel David Tovar Rodriguez - CRUD Protegido', 
+    version='1.1'
 )
 
 # Configuración de CORS
@@ -22,141 +22,117 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
+# Base de datos ficticia
 Citas = [
-    {"id": 1, "nombre": "Manuel Tovar", "dia": 10,"mes": 3,"anio": 2026,"motivo":"dolor abdominal","confirmacion":1},
-    {"id": 2, "nombre": "Andres Martinez","dia": 14,"mes": 4,"anio": 2026,"motivo":"dolor de cabeza","confirmacion":1},
-    {"id": 3, "nombre": "Diego Rubio", "dia": 17,"mes": 6,"anio": 2026,"motivo":"dolor de estomago","confirmacion":1},
+    {"id": 1, "nombre": "Manuel Tovar", "dia": 10, "mes": 3, "anio": 2026, "motivo": "dolor abdominal", "confirmacion": True},
+    {"id": 2, "nombre": "Andres Martinez", "dia": 14, "mes": 4, "anio": 2026, "motivo": "dolor de cabeza", "confirmacion": True},
+    {"id": 3, "nombre": "Diego Rubio", "dia": 17, "mes": 6, "anio": 2026, "motivo": "dolor de estomago", "confirmacion": True},
 ]
 
 # Modelo de validacion pydantic
 class CitaBase(BaseModel):
-    id:int = Field(...,gt=0, description="identificador unico de la cita", example="1")
-    nombre:str = Field(...,min_length=3, max_length=50, description="Nombre del paciente")
-    dia:int = Field(...,gt=9, description="dia de la cita", example="30", le=31)
-    mes:int = Field(...,gt=1, description="mes de la cita", example="7", le=12)
-    anio :int = Field(...,gt=2025, description="anio de la cita", example="2026", le=2026)
-    motivo:str = Field(...,min_length=3, max_length=100, description="motivo de la cita")
-    confirmacion:bool = Field(...,gt=0, description="identificador de confirmacion", example="0")
-# -----Seguridad HTTP Basic------
+    id: int = Field(..., gt=0, description="Identificador único")
+    nombre: str = Field(..., min_length=3, max_length=50)
+    dia: int = Field(..., ge=1, le=31)
+    mes: int = Field(..., ge=1, le=12)
+    anio: int = Field(..., ge=2024)
+    motivo: str = Field(..., min_length=3, max_length=100)
+    confirmacion: bool
+
+    # Validación personalizada para la fecha
+    @validator('dia')
+    @classmethod  # Esto elimina el error de 'cls' y la línea roja
+    def validar_fecha_futura(cls, v, values):
+        # Verificamos que 'anio' y 'mes' ya existan en el diccionario de valores
+        if 'anio' in values and 'mes' in values:
+            try:
+                # Importante: date debe estar importado (from datetime import date)
+                fecha_cita = date(values['anio'], values['mes'], v)
+                if fecha_cita < date.today():
+                    raise ValueError('La fecha no puede ser anterior a la actual')
+            except ValueError as e:
+                # Esto captura fechas imposibles como 31 de febrero
+                raise ValueError(f'Fecha inválida o pasada: {e}')
+        return v
+
+# ----- Seguridad HTTP Basic ------
 security = HTTPBasic()    
 
 def verificar_peticion(credentials: HTTPBasicCredentials = Depends(security)):
-    usuarioAuth= secrets.compare_digest(credentials.username,"root")    
-    ContraAuth= secrets.compare_digest(credentials.password,"1234") 
+    usuario_valido = secrets.compare_digest(credentials.username, "root")    
+    contra_valida = secrets.compare_digest(credentials.password, "1234") 
     
-    if not (usuarioAuth and ContraAuth):
+    if not (usuario_valido and contra_valida):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="credenciales incorrectas",
+            detail="Credenciales incorrectas",
+            headers={"WWW-Authenticate": "Basic"},
         )
     return credentials.username
-    
-    
-# --- Endpoints ---
 
-@app.get("/")
+# --- Endpoints Públicos ---
+
+@app.get("/", tags=['Inicio'])
 async def holamundo():
     return {"mensaje": "Holamundo FastAPI"}
 
-@app.get("/bienvenidos", tags=['Inicio'])
-async def bienvenido():
-    return {"mensaje": "Bienvenidos a tu API REST"}
+# --- Endpoints Protegidos (CRUD) ---
 
-@app.get("/v1/calificaciones", tags=['Asincronia'])
-async def calificaciones():
-    await asyncio.sleep(6)
-    return {"mensaje": "Tu calificacion en TAI es 10"}
-
-@app.get("/v1/ParametroO/{id}", tags=['Parametro obligatorio'])
-async def cunsultaUsuariosO(id: int):
-    await asyncio.sleep(3)
-    return {"Bienvenidos a tu api REST": id}
-
-@app.get("/v1/ParametroOp/", tags=['Parametro opcionales'])
-async def cunsultaOp(id: Optional[int] = None):
-    await asyncio.sleep(3)
-    
-    if id is not None:
-        for cita in Citas:
-            if cita["id"] == id:
-                return {"cita encontrada con el id": id, "cita": cita}
-        
-        
-        return {"Mensaje": "cita no encontrada"} 
-    
-    else:
-        return {"Aviso": "no se proporciono id"}
-    
 @app.get("/v1/citas/", tags=['CRUD citas'])
-async def consultaCitas():
-    return{
-        "status":"200",
+async def consultaCitas(usuario: str = Depends(verificar_peticion)):
+    return {
         "total": len(Citas),
-        "data":Citas
+        "data": Citas
     }
-    
-@app.post("/v1/citas/", tags=['CRUD citas'])
-async def agregar_citas(cita:CitaBase):
-    for cita in Citas:
-        if cita ["id"] == id:
-           raise HTTPException(
-               status_code=400,
-               detail="el id ya existe"
-           )
-    Citas.append(cita)
-    return{
-        "mensaje":"Cita agregada",
-        "datos":cita,
-        "status":"200"
-    }
-#tarea hacer put y delete
 
-#endpoint para put
-@app.put("/v1/citas/{id}", tags=['CRUD citas'])
-async def actualizar_cita(id: int, cita_actualizada: dict):
+@app.get("/v1/citas/{id}", tags=['CRUD citas'])
+async def consultarCitaPorId(id: int, usuario: str = Depends(verificar_peticion)):
+    for cita in Citas:
+        if cita["id"] == id:
+            return {"cita": cita}
+    raise HTTPException(status_code=404, detail="Cita no encontrada")
+
+@app.post("/v1/citas/", tags=['CRUD citas'], status_code=status.HTTP_201_CREATED)
+async def agregar_citas(cita: CitaBase, usuario: str = Depends(verificar_peticion)):
+    # Verificar si el ID ya existe
+    if any(c['id'] == cita.id for c in Citas):
+        raise HTTPException(status_code=400, detail="El ID ya existe")
     
+    nueva_cita = cita.dict()
+    Citas.append(nueva_cita)
+    return {
+        "mensaje": "Cita agendada correctamente",
+        "datos": nueva_cita
+    }
+
+@app.put("/v1/citas/{id}", tags=['CRUD citas'])
+async def actualizar_cita(id: int, cita_actualizada: CitaBase, usuario: str = Depends(verificar_peticion)):
     for index, cita in enumerate(Citas):
         if cita["id"] == id:
-            
-            Citas[index] = {
-                "id": id,
-                "nombre": cita_actualizada.get("nombre", cita["nombre"]),
-                "dia": cita_actualizada.get("dia", cita["dia"]),
-                "mes": cita_actualizada.get("mes", cita["mes"]),
-                "anio": cita_actualizada.get("anio", cita["anio"]),
-                "motivo": cita_actualizada.get("motivo", cita["motivo"]),
-                "confirmacion": cita_actualizada.get("confirmacion", cita["confirmacion"]),
-            }
-            
+            # Reemplazamos con los nuevos datos validados
+            Citas[index] = cita_actualizada.dict()
             return {
                 "mensaje": "Cita actualizada correctamente",
-                "datos": Citas[index],
-                "status": "200"
+                "datos": Citas[index]
             }
     
-    raise HTTPException(
-        status_code=404,
-        detail="Cita no encontrada"
-    )
-    
-#enpoint para delete
-@app.delete("/v1/citas/{id}", tags=['CRUD Citas'])
+    raise HTTPException(status_code=404, detail="Cita no encontrada")
+
+@app.delete("/v1/citas/{id}", tags=['CRUD citas'])
 async def eliminar_cita(id: int, usuarioAuth: str = Depends(verificar_peticion)):
-    
     for index, cita in enumerate(Citas):
         if cita["id"] == id:
             cita_eliminada = Citas.pop(index)
-            
-        
-            return {"message": f"Usuario eliminadoo por {usuarioAuth}"}
-        
             return {
-                "mensaje": "Cita eliminada correctamente",
-                "usuario_eliminado": cita_eliminada,
-                "status": "200"
+                "mensaje": f"Cita eliminada correctamente por {usuarioAuth}",
+                "datos_eliminados": cita_eliminada
             }
     
-    raise HTTPException(
-        status_code=404,
-        detail="Cita no encontrada"
-    )
+    raise HTTPException(status_code=404, detail="Cita no encontrada")
+
+# --- Otros Endpoints ---
+
+@app.get("/v1/calificaciones", tags=['Asincronia'])
+async def calificaciones():
+    await asyncio.sleep(1) # Reducido para pruebas rápidas
+    return {"mensaje": "Tu calificacion en TAI es 10"}
