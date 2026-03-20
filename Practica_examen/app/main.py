@@ -182,4 +182,7 @@ async def eliminar_auto(id: int, usuarioAuth: str = Depends(verificar_peticion))
 #borrar contenedores docker-compose down
 #verificar contenedores docker ps
 #docker build -t imagen-autos .
-#asignamos el nombre docker run -d --name autos -p 5000:5000 imagen-autos
+#asignamos el nombre docker run -d --name autos -p 7000:7000 imagen-autos
+# para ver los errores docker logs autos
+# deten y borramos el contenedor actual docker stop autos
+#docker rm autos

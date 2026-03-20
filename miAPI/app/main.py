@@ -19,5 +19,5 @@ app.add_middleware(
 )
 
 # Incluir los routers
-app.include_router(misc.router)        # Endpoints varios (sin prefijo)
+app.include_router(misc.router)        # Endpoints varios 
 app.include_router(usuarios.router)    # Endpoints CRUD de usuarios
