@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from app.data.db import engine
+from app.data import usuario
 from app.routers import usuarios, misc
+
+usuario.Base.metadata.create_all(bind=engine)
 
 # Inicialización del servidor
 app = FastAPI(
