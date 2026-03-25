@@ -21,6 +21,22 @@ async def consultaUsuarios( db: Session = Depends(get_db)):
         "data": consultaUsuariosusuarios
     }
 
+@router.get("/{id}")
+async def Consultausuario(id: int, db: Session = Depends(get_db)):
+    
+    usuario = db.query(UsuarioDB).filter(UsuarioDB.id == id).first()
+    
+    if not usuario:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuario no encontrado"
+        )
+    
+    return {
+        "status": "200",
+        "data": usuario
+    }
+
 @router.post("/")
 async def agregar_usuarios(usuario: UsuarioBase, db: Session = Depends(get_db)):
     
@@ -37,35 +53,39 @@ async def agregar_usuarios(usuario: UsuarioBase, db: Session = Depends(get_db)):
     }
 
 @router.put("/{id}")
-async def actualizar_usuario(id: int, usuario_actualizado: Dict[str, Any]):
-    for index, usuario in enumerate(database.usuarios):
-        if usuario["id"] == id:
-            database.usuarios[index] = {
-                "id": id,
-                "nombre": usuario_actualizado.get("nombre", usuario["nombre"]),
-                "edad": usuario_actualizado.get("edad", usuario["edad"])
-            }
-            return {
-                "mensaje": "Usuario actualizado correctamente",
-                "datos": database.usuarios[index],
-                "status": "200"
-            }
-    raise HTTPException(
-        status_code=404,
-        detail="Usuario no encontrado"
-    )
+async def actualizar_usuario(id: int, usuario_actualizado: UsuarioBase, db: Session = Depends(get_db)):
+    
+    usuario = db.query(UsuarioDB).filter(UsuarioDB.id == id).first()
+    
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # actualizar campos
+    usuario.nombre = usuario_actualizado.nombre
+    usuario.edad = usuario_actualizado.edad
+    
+    db.commit()
+    db.refresh(usuario)
+    
+    return {
+        "mensaje": "Usuario actualizado correctamente",
+        "data": usuario,
+        "status": "200"
+    }
 
 @router.delete("/{id}")
-async def eliminar_usuario(id: int, usuarioAuth: str = Depends(verificar_peticion)):
-    for index, usuario in enumerate(database.usuarios):
-        if usuario["id"] == id:
-            usuario_eliminado = database.usuarios.pop(index)
-            return {
-                "mensaje": f"Usuario eliminado por {usuarioAuth}",
-                "usuario_eliminado": usuario_eliminado,
-                "status": "200"
-            }
-    raise HTTPException(
-        status_code=404,
-        detail="Usuario no encontrado"
-    )
+async def eliminar_usuario(id: int, usuarioAuth: str = Depends(verificar_peticion), db: Session = Depends(get_db)):
+    
+    usuario = db.query(UsuarioDB).filter(UsuarioDB.id == id).first()
+    
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    db.delete(usuario)
+    db.commit()
+    
+    return {
+        "mensaje": f"Usuario eliminado por {usuarioAuth}",
+        "data": {"id": id},
+        "status": "200"
+    }
